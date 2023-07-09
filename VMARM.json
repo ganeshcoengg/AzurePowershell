@@ -1,0 +1,328 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "subscriptionId": {
+      "type": "string"
+    },
+    "virtualNetworkId": {
+      "type": "string"
+    },
+    "enableAcceleratedNetworking": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "applicationSecurityGroups": {
+      "type": "array"
+    },
+    "subnetName": {
+      "type": "string"
+    },
+    "enablePublicIpAddress": {
+      "type": "bool"
+    },
+    "virtualMachineName": {
+      "type": "string"
+    },
+    "osDiskType": {
+      "type": "string"
+    },
+    "dataDiskConfig": {
+      "type": "array"
+    },
+    "virtualMachineSize": {
+      "type": "string"
+    },
+    "virtualMachineOffer": {
+      "type": "string"
+    },
+    "virtualMachinePublisher": {
+      "type": "string"
+    },
+    "virtualMachineSku": {
+      "type": "string"
+    },
+    "virtualMachineImageVersion": {
+      "type": "string"
+    },
+    "adminUsername": {
+      "type": "string"
+    },
+    "adminPassword": {
+      "type": "securestring"
+    },
+    "diagnosticsStorageAccountName": {
+      "type": "string"
+    },
+    "availabilitySetName": {
+      "type": "string"
+    },
+    "availabilitySetPlatformFaultDomainCount": {
+      "type": "int"
+    },
+    "availabilitySetPlatformUpdateDomainCount": {
+      "type": "int"
+    },
+    "autoShutdownStatus": {
+      "type": "string"
+    },
+    "autoShutdownTime": {
+      "type": "string"
+    },
+    "autoShutdownTimeZone": {
+      "type": "string"
+    },
+    "autoShutdownNotificationStatus": {
+      "type": "string"
+    },
+    "autoShutdownNotificationLocale": {
+      "type": "string"
+    },
+    "tentacleOctopusServerUrl": {
+      "type": "string",
+      "metadata": {
+        "description": "The URL of the Octopus Server with which to register."
+      }
+    },
+    "tentacleApiKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The Api Key to use to register the Tentacle with the Octopus Server."
+      }
+    },
+    "tentacleCommunicationMode": {
+      "defaultValue": "Listen",
+      "allowedValues": [
+        "Listen",
+        "Poll"
+      ],
+      "type": "string",
+      "metadata": {
+        "description": "The type of Tentacle - whether the Tentacle listens for requests from the Octopus Server, or actively polls the Octopus Server for requests."
+      }
+    },
+    "tentaclePort": {
+      "defaultValue": 10933,
+      "minValue": 0,
+      "maxValue": 65535,
+      "type": "int",
+      "metadata": {
+        "description": "The port on which the Tentacle should listen, when CommunicationMode is set to Listen, or the port on which to poll the Octopus Server, when CommunicationMode is set to Poll. By default, Tentacle's listen on 10933 and polls the Octopus Server on 10943."
+      }
+    },
+    "tentacleRoles": {
+      "type": "string",
+      "metadata": {
+        "description": "A comma delimited list of Roles to apply to the Tentacle."
+      }
+    },
+    "tentacleEnvironments": {
+      "type": "string",
+      "metadata": {
+        "description": "A comma delimited list of Environments in which the Tentacle should be placed."
+      }
+    },
+    "tentaclePublicHostNameConfiguration": {
+      "defaultValue": "PublicIP",
+      "allowedValues": [
+        "PublicIP",
+        "FQDN",
+        "ComputerName",
+        "Custom"
+      ],
+      "type": "string",
+      "metadata": {
+        "description": "How the Octopus Server should contact the Tentacle. Only required when CommunicationMode is 'Listen'."
+      }
+    },
+    "tentacleCustomPublicHostName": {
+      "defaultValue": "",
+      "type": "string",
+      "metadata": {
+        "description": "The custom public host name that the Octopus Server should use to contact the Tentacle. Only required when communicationMode is 'Listen' and publicHostNameConfiguration is 'Custom'."
+      }
+    },
+    "domain": {
+      "type": "string"
+    },
+    "domainAdmin": {
+      "type": "string"
+    },
+    "domainPassword": {
+      "type": "securestring"
+    },
+    "sqlConnectivityType": {
+      "type": "string",
+      "defaultValue": "Private"
+    },
+    "sqlPortNumber": {
+      "type": "int",
+      "defaultValue": 1433
+    },
+    "sqlStorageDisksCount": {
+      "type": "int",
+      "defaultValue": 1
+    },
+    "sqlStorageWorkloadType": {
+      "type": "string",
+      "defaultValue": "OLTP"
+    },
+    "sqlStorageDisksConfigurationType": {
+      "type": "string",
+      "defaultValue": "NEW"
+    },
+    "sqlDiskCount": {
+      "type": "int",
+      "defaultValue": 1
+    },
+    "sqlStorageStartingDeviceId": {
+      "type": "int",
+      "defaultValue": 2
+    },
+    "sqlStorageDeploymentToken": {
+      "type": "int",
+      "defaultValue": 1
+    },
+    "rServicesEnabled": {
+      "type": "bool",
+      "defaultValue": false
+    },
+    "sqlDiskConfigurationType": {
+      "type": "string",
+      "defaultValue": "NEW"
+    },
+    "sqlImageSku": {
+      "type": "string",
+      "defaultValue": "Standard"
+    },
+    "sQLStorageUpdateSettings": {
+      "type": "object"
+    },
+    "tagsData": {
+      "type": "object"
+    }
+  },
+  "variables": {
+    "publicIpAddressSku": "Basic",
+    "publicIpAddressType": "Dynamic",
+    "vnetId": "[parameters('virtualNetworkId')]",
+    "subnetRef": "[concat(variables('vnetId'), '/subnets/', parameters('subnetName'))]",
+    "networkInterfaceName": "[concat(parameters('virtualMachineName'), '-nic')]",
+    "networkInterfaceType": "[if(equals(parameters('enablePublicIpAddress'), bool('false')), '-private', '-public')]",
+    "publicIpAddressName": "[concat(parameters('virtualMachineName'),'-ip')]",
+    "disk0": "[concat(parameters('virtualMachineName'),'_DataDisk_0')]",
+    "availabilitySetId": {
+      "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
+    }
+  },
+  "resources": [
+    {
+      "condition": "[equals(parameters('enablePublicIpAddress'), bool('true'))]",
+      "name": "[concat(variables('networkInterfaceName'), '-public')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2018-08-01",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              },
+              "privateIPAllocationMethod": "[variables('publicIpAddressType')]",
+              "publicIpAddress": {
+                "id": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "[parameters('virtualMachineName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2018-06-01",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "availabilitySet": "[if(greater(parameters('availabilitySetPlatformFaultDomainCount'),0),variables('availabilitySetId'),json('null'))]",
+        "hardwareProfile": {
+          "vmSize": "[parameters('virtualMachineSize')]"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "name": "[concat(parameters('virtualMachineName'), '_OsDisk')]",
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "[parameters('osDiskType')]"
+            }
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',  concat(variables('networkInterfaceName'), variables('networkInterfaceType')))]"
+            }
+          ]
+        },
+        "osProfile": {
+          "computerName": "[parameters('virtualMachineName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "windowsConfiguration": {
+            "enableAutomaticUpdates": true,
+            "provisionVmAgent": true
+          }
+        },
+        "licenseType": "Windows_Server"
+      },
+      "tags": "[parameters('tagsData')]"
+    },
+    {
+      "condition": "[equals(parameters('virtualMachinePublisher'), 'MicrosoftSQLServer')]",
+      "name": "[parameters('virtualMachineName')]",
+      "type": "Microsoft.SqlVirtualMachine/SqlVirtualMachines",
+      "apiVersion": "2017-03-01-preview",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "virtualMachineResourceId": "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachineName'))]"
+      }
+    },
+    {
+      "name": "[concat('shutdown-computevm-', parameters('virtualMachineName'))]",
+      "type": "Microsoft.DevTestLab/schedules",
+      "apiVersion": "2017-04-26-preview",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', parameters('virtualMachineName'))]"
+      ],
+      "properties": {
+        "status": "[parameters('autoShutdownStatus')]",
+        "taskType": "ComputeVmShutdownTask",
+        "dailyRecurrence": {
+          "time": "[parameters('autoShutdownTime')]"
+        },
+        "timeZoneId": "[parameters('autoShutdownTimeZone')]",
+        "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachineName'))]"
+      }
+    }
+  ],
+  "outputs": {
+    "adminUsername": {
+      "type": "string",
+      "value": "[parameters('adminUsername')]"
+    },
+    "vmResourceID": {
+      "type": "string",
+      "value": "[concat('/subscriptions/', parameters('subscriptionId'), '/resourceGroups/', resourceGroup().name,'/providers/Microsoft.Compute/virtualMachines/',parameters('virtualMachineName'))]"
+    },
+    "publicIpAddressId": {
+      "type": "string",
+      "value": "[resourceId(resourceGroup().name, 'Microsoft.Network/publicIpAddresses', variables('publicIpAddressName'))]"
+    },
+    "virtualNetworkId": {
+      "type": "string",
+      "value": "[variables('vNetId')]"
+    }
+  }
+}
